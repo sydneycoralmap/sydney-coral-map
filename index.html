@@ -79,25 +79,28 @@
           speciesSet.add(species);
 
           const color = observed ? "green" : "red";
+
+          const popupContent = `
+            <strong>Observer:</strong> ${row.Observer || "N/A"}<br/>
+            <strong>Species:</strong> ${species}<br/>
+            <strong>Latitude:</strong> ${lat}<br/>
+            <strong>Longitude:</strong> ${lng}<br/>
+            ${row.Notes ? `<strong>Notes:</strong> ${row.Notes}<br/>` : ""}
+            ${row["Photo URL"] ? `<strong>Photo:</strong><br/><img src="${row["Photo URL"]}" width="150" style="margin-top:5px;" />` : ""}
+          `;
+
           const marker = L.circleMarker([lat, lng], {
             radius: 8,
             color: color,
             fillColor: color,
             fillOpacity: 0.8
-          }).bindPopup(`
-            <strong>Observer:</strong> ${row.Observer || "N/A"}<br/>
-            <strong>Area:</strong> ${row.Area || "N/A"}<br/>
-            <strong>Coral observed:</strong> ${observed ? "Yes" : "No"}<br/>
-            ${row.Species ? `<strong>Species:</strong> ${row.Species}<br/>` : ""}
-            ${row.Notes ? `<strong>Notes:</strong> ${row.Notes}<br/>` : ""}
-            ${row["Photo URL"] ? `<img src="${row["Photo URL"]}" width="100"/>` : ""}
-          `);
+          }).bindPopup(popupContent);
 
           marker.addTo(map);
           allMarkers.push({ marker, species });
         });
 
-        // Populate dropdown
+        // Populate species dropdown
         Array.from(speciesSet).sort().forEach(sp => {
           const option = document.createElement("option");
           option.value = sp;
@@ -106,7 +109,7 @@
         });
       });
 
-    // Filter handler
+    // Filter function
     speciesFilter.addEventListener("change", function () {
       const selected = this.value;
       allMarkers.forEach(({ marker, species }) => {

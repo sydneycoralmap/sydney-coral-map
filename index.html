@@ -6,49 +6,118 @@
   <title>Coral Observations Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    body { margin: 0; font-family: Montserrat, sans-serif; }
-    #map { height: 100vh; width: 100%; }
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    header {
+      background-color: #0d1b2a;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    #controls {
+      padding: 10px 20px;
+      background: #f4f4f4;
+    }
+
+    label {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    #map {
+      height: calc(100vh - 130px);
+      width: 100%;
+    }
+
+    select {
+      font-size: 1em;
+      padding: 5px;
+    }
   </style>
 </head>
 <body>
 
-<div id="map"></div>
+  <header>
+    <h1>Coral Observations Map</h1>
+  </header>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script>
-  const map = L.map('map').setView([-33.85, 151.2], 10);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
+  <div id="controls">
+    <label for="speciesFilter">Filter by species:</label>
+    <select id="speciesFilter">
+      <option value="All">All species</option>
+    </select>
+  </div>
 
-  fetch("https://opensheet.elk.sh/1q_lPdKDKKcEWWc6SNfWOoNa34Ra9W5SX6VrEvCgWWZ4/Sheet1")
-    .then(res => res.json())
-    .then(data => {
-      data.forEach(row => {
-        const lat = parseFloat(row.Latitude);
-        const lng = parseFloat(row.Longitude);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          const color = row["Coral observed"] === "Y" ? "green" : "red";
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([-33.85, 151.2], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const speciesFilter = document.getElementById("speciesFilter");
+    const allMarkers = [];
+
+    fetch("https://opensheet.elk.sh/1q_lPdKDKKcEWWc6SNfWOoNa34Ra9W5SX6VrEvCgWWZ4/Sheet1")
+      .then(res => res.json())
+      .then(data => {
+        const speciesSet = new Set();
+
+        data.forEach(row => {
+          const lat = parseFloat(row.Latitude);
+          const lng = parseFloat(row.Longitude);
+          if (isNaN(lat) || isNaN(lng)) return;
+
+          const observed = row["Coral observed"] === "Y";
+          const species = row.Species?.trim() || "Unknown";
+          speciesSet.add(species);
+
+          const color = observed ? "green" : "red";
           const marker = L.circleMarker([lat, lng], {
             radius: 8,
             color: color,
             fillColor: color,
             fillOpacity: 0.8
-          }).addTo(map);
-
-          const popup = `
-            <strong>Observer:</strong> ${row.Observer}<br/>
-            <strong>Area:</strong> ${row.Area}<br/>
-            <strong>Coral observed:</strong> ${row["Coral observed"]}<br/>
+          }).bindPopup(`
+            <strong>Observer:</strong> ${row.Observer || "N/A"}<br/>
+            <strong>Area:</strong> ${row.Area || "N/A"}<br/>
+            <strong>Coral observed:</strong> ${observed ? "Yes" : "No"}<br/>
             ${row.Species ? `<strong>Species:</strong> ${row.Species}<br/>` : ""}
             ${row.Notes ? `<strong>Notes:</strong> ${row.Notes}<br/>` : ""}
             ${row["Photo URL"] ? `<img src="${row["Photo URL"]}" width="100"/>` : ""}
-          `;
-          marker.bindPopup(popup);
+          `);
+
+          marker.addTo(map);
+          allMarkers.push({ marker, species });
+        });
+
+        // Populate dropdown
+        Array.from(speciesSet).sort().forEach(sp => {
+          const option = document.createElement("option");
+          option.value = sp;
+          option.textContent = sp;
+          speciesFilter.appendChild(option);
+        });
+      });
+
+    // Filter handler
+    speciesFilter.addEventListener("change", function () {
+      const selected = this.value;
+      allMarkers.forEach(({ marker, species }) => {
+        if (selected === "All" || species === selected) {
+          marker.addTo(map);
+        } else {
+          map.removeLayer(marker);
         }
       });
     });
-</script>
+  </script>
 
 </body>
 </html>

@@ -41,10 +41,6 @@
 </head>
 <body>
 
-  <header>
-    <h1>Coral Observations Map</h1>
-  </header>
-
   <div id="controls">
     <label for="speciesFilter">Filter by species:</label>
     <select id="speciesFilter">
@@ -86,7 +82,6 @@
             <strong>Latitude:</strong> ${lat}<br/>
             <strong>Longitude:</strong> ${lng}<br/>
             ${row.Notes ? `<strong>Notes:</strong> ${row.Notes}<br/>` : ""}
-            ${row["Photo URL"] ? `<strong>Photo:</strong><br/><img src="${row["Photo URL"]}" width="150" style="margin-top:5px;" />` : ""}
           `;
 
           const marker = L.circleMarker([lat, lng], {
